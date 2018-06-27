@@ -1,4 +1,23 @@
-;(function ($, window, document, undefined) {
+(function(factory) {
+  if (typeof define === 'function' && define.amd) {
+    define(['jquery'], factory);
+  } else if (typeof module === 'object' && module.exports) {
+    module.exports = function(root, jQuery) {
+      if (jQuery === undefined) {
+        if (typeof window !== 'undefined') {
+          jQuery = require('jquery');
+        }
+        else {
+          jQuery = require('jquery')(root);
+        }
+      }
+      factory(jQuery);
+      return jQuery;
+    };
+  } else {
+    factory(jQuery);
+  }
+}(function($) {
   var pluginName = 'bootstrapDropdownHover',
       defaults = {
         clickBehavior: 'sticky',  // Click behavior setting:
@@ -17,19 +36,21 @@
   // The actual plugin constructor
   function BootstrapDropdownHover(element, options) {
     this.element = $(element);
-    this.settings = $.extend({}, defaults, options);
+    this.settings = $.extend({}, defaults, options, this.element.data());
     this._defaults = defaults;
     this._name = pluginName;
     this.init();
   }
 
   function bindEvents(dropdown) {
-    $('body').one('touchstart.dropdownhover', function() {
+    var $body = $('body');
+
+    $body.one('touchstart.dropdownhover', function() {
       _touchstartDetected = true;
     });
 
-    $('body').one('mouseenter.dropdownhover', function() {
-      // touchstart fires before mouseenter on touch devices
+    $body.one('mousemove.dropdownhover', function() {
+      // touchstart fires before mousemove on touch devices
       if (!_touchstartDetected) {
         _mouseDetected = true;
       }
@@ -37,7 +58,7 @@
 
     $('.dropdown-toggle, .dropdown-menu', dropdown.element.parent()).on('mouseenter.dropdownhover', function () {
       // seems to be a touch device
-      if(_mouseDetected && !$(this).is(':hover')) {
+      if(_mouseDetected && !$(this.hover)) {
         _mouseDetected = false;
       }
 
@@ -46,7 +67,7 @@
       }
 
       clearTimeout(_hideTimeoutHandler);
-      if (!dropdown.element.parent().hasClass('open')) {
+      if (!dropdown.element.parent().is('.open, .show')) {
         _hardOpened = false;
         dropdown.element.dropdown('toggle');
       }
@@ -61,7 +82,7 @@
         return;
       }
       _hideTimeoutHandler = setTimeout(function () {
-        if (dropdown.element.parent().hasClass('open')) {
+        if (dropdown.element.parent().is('.open, .show')) {
           dropdown.element.dropdown('toggle');
         }
       }, dropdown.settings.hideTimeout);
@@ -88,7 +109,7 @@
           }
           else {
             _hardOpened = true;
-            if (dropdown.element.parent().hasClass('open')) {
+            if (dropdown.element.parent().is('.open, .show')) {
               e.stopImmediatePropagation();
               e.preventDefault();
             }
@@ -182,4 +203,4 @@
 
   };
 
-})(jQuery, window, document);
+}));

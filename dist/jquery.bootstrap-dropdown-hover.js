@@ -1,17 +1,37 @@
 /*
- *  Bootstrap Dropdown Hover - v1.0.4
+ *  Bootstrap Dropdown Hover - v4.1.1
  *  Open dropdown menus on mouse hover, the proper way.
  *  http://www.virtuosoft.eu/code/bootstrap-dropdown-hover/
  *
  *  Made by István Ujj-Mészáros
  *  Under Apache License v2.0 License
  */
-;(function ($, window, document, undefined) {
+(function(factory) {
+  if (typeof define === 'function' && define.amd) {
+    define(['jquery'], factory);
+  } else if (typeof module === 'object' && module.exports) {
+    module.exports = function(root, jQuery) {
+      if (jQuery === undefined) {
+        if (typeof window !== 'undefined') {
+          jQuery = require('jquery');
+        }
+        else {
+          jQuery = require('jquery')(root);
+        }
+      }
+      factory(jQuery);
+      return jQuery;
+    };
+  } else {
+    factory(jQuery);
+  }
+}(function($) {
   var pluginName = 'bootstrapDropdownHover',
       defaults = {
         clickBehavior: 'sticky',  // Click behavior setting:
                                   // 'default' means that the dropdown toggles on hover and on click too
                                   // 'disable' disables dropdown toggling with clicking when mouse is detected
+                                  // 'link'    disabled dropdown toggling, but allows link clicks to go through
                                   //  'sticky' means if we click on an opened dropdown then it will not hide on
                                   //           mouseleave but on a second click only
         hideTimeout: 200
@@ -24,19 +44,21 @@
   // The actual plugin constructor
   function BootstrapDropdownHover(element, options) {
     this.element = $(element);
-    this.settings = $.extend({}, defaults, options);
+    this.settings = $.extend({}, defaults, options, this.element.data());
     this._defaults = defaults;
     this._name = pluginName;
     this.init();
   }
 
   function bindEvents(dropdown) {
-    $('body').one('touchstart.dropdownhover', function() {
+    var $body = $('body');
+
+    $body.one('touchstart.dropdownhover', function() {
       _touchstartDetected = true;
     });
 
-    $('body').one('mouseenter.dropdownhover', function() {
-      // touchstart fires before mouseenter on touch devices
+    $body.one('mousemove.dropdownhover', function() {
+      // touchstart fires before mousemove on touch devices
       if (!_touchstartDetected) {
         _mouseDetected = true;
       }
@@ -44,7 +66,7 @@
 
     $('.dropdown-toggle, .dropdown-menu', dropdown.element.parent()).on('mouseenter.dropdownhover', function () {
       // seems to be a touch device
-      if(_mouseDetected && !$(this).is(':hover')) {
+      if(_mouseDetected && !$(this.hover)) {
         _mouseDetected = false;
       }
 
@@ -53,7 +75,7 @@
       }
 
       clearTimeout(_hideTimeoutHandler);
-      if (!dropdown.element.parent().hasClass('open')) {
+      if (!dropdown.element.parent().is('.open, .show')) {
         _hardOpened = false;
         dropdown.element.dropdown('toggle');
       }
@@ -68,14 +90,14 @@
         return;
       }
       _hideTimeoutHandler = setTimeout(function () {
-        if (dropdown.element.parent().hasClass('open')) {
+        if (dropdown.element.parent().is('.open, .show')) {
           dropdown.element.dropdown('toggle');
         }
       }, dropdown.settings.hideTimeout);
     });
 
     dropdown.element.on('click.dropdownhover', function (e) {
-      if (!_mouseDetected) {
+      if (dropdown.settings.clickBehavior !== 'link' && !_mouseDetected) {
         return;
       }
 
@@ -85,14 +107,17 @@
         case 'disable':
           e.preventDefault();
           e.stopImmediatePropagation();
-          break;
+          return;
+        case 'link':
+          e.stopImmediatePropagation();
+          return;
         case 'sticky':
           if (_hardOpened) {
             _hardOpened = false;
           }
           else {
             _hardOpened = true;
-            if (dropdown.element.parent().hasClass('open')) {
+            if (dropdown.element.parent().is('.open, .show')) {
               e.stopImmediatePropagation();
               e.preventDefault();
             }
@@ -186,4 +211,4 @@
 
   };
 
-})(jQuery, window, document);
+}));
